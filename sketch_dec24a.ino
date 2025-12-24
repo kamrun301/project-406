@@ -11,21 +11,21 @@ DHT dht(DHTPIN, DHTTYPE);
 #define BUZZER_PIN 8
 
 // --- Thresholds ---
-#define SOUND_THRESHOLD 100   // Adjustable: calibrate your sensor
-#define WATER_THRESHOLD 10    // Minimal water value to trigger buzzer
+#define SOUND_THRESHOLD 100
+#define WATER_THRESHOLD 10
 
 void setup() {
   Serial.begin(9600);
   delay(1000);
 
   dht.begin();
-  pinMode(BUZZER_PIN, OUTPUT); 
+  pinMode(BUZZER_PIN, OUTPUT);
 
   Serial.println("UNO R3 Sensor Test Starting...");
 }
 
 void loop() {
-  // ---------- Sound Sensor (Smooth with 5 readings) ----------
+  // ---------- Sound Sensor (average of 5 readings) ----------
   int soundSum = 0;
   for (int i = 0; i < 5; i++) {
     soundSum += analogRead(SOUND_ANALOG);
@@ -38,18 +38,17 @@ void loop() {
 
   // ---------- DHT11 ----------
   float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature(); 
+  float temperature = dht.readTemperature();
 
   // ---------- Buzzer Logic ----------
-  // Buzzer ON if Sound > SOUND_THRESHOLD AND Water > WATER_THRESHOLD
   if (soundValue > SOUND_THRESHOLD && waterValue > WATER_THRESHOLD) {
     digitalWrite(BUZZER_PIN, HIGH);
-    Serial.println(">>> ALERT: BOTH Sound AND Water Detected! <<<"); 
+    Serial.println(">>> ALERT: BOTH Sound AND Water Detected! <<<");
   } else {
     digitalWrite(BUZZER_PIN, LOW);
   }
 
-  // ---------- Serial Monitor Output ----------
+  // ---------- Human-readable Serial Output ----------
   if (isnan(humidity) || isnan(temperature)) {
     Serial.println("Failed to read from DHT11!");
   } else {
@@ -67,7 +66,20 @@ void loop() {
   Serial.println(waterValue);
 
   Serial.println("--------------------------");
-  
-  delay(1000); 
+
+  // ---------- JSON Output for Python MQTT ----------
+  if (!isnan(humidity) && !isnan(temperature)) {
+    Serial.print("{\"temperature\":");
+    Serial.print(temperature);
+    Serial.print(",\"humidity\":");
+    Serial.print(humidity);
+    Serial.print(",\"sound\":");
+    Serial.print(soundValue);
+    Serial.print(",\"water\":");
+    Serial.print(waterValue);
+    Serial.println("}");
+  }
+
+  delay(1000);
 }
 
